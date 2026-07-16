@@ -1,13 +1,29 @@
 # 🚀 Ledger API -   Kubernetes Deployment with ArgoCD, Sealed Secrets & GitOps
 
-![Kubernetes](https://img.shields.io/badge/Kubernetes-1.33-blue)
-![ArgoCD](https://img.shields.io/badge/ArgoCD-GitOps-orange)
-![Docker](https://img.shields.io/badge/Docker-Containerization-blue)
-![Sealed Secrets](https://img.shields.io/badge/Secrets-SealedSecrets-green)
-![GitHub Actions](https://img.shields.io/badge/GitHub-Actions-black)
+## 🔄 GitHub Actions CI Pipeline
+
+![GitHub Actions](images/github-actions.png)
+
 
 ---
 
+## 🚢 ArgoCD GitOps Deployment
+
+![ArgoCD Dashboard](images/argocd-dashboard.png)
+
+
+---
+
+## ☸️ Kubernetes Running Pods
+
+![Kubernetes Pods](images/kubernetes-pods.png)
+
+
+---
+
+## 🌐 Application Serving Successfully
+
+![Application Running](images/application-running.png)
 # 📌 Project Overview
 
 This project demonstrates a -style Kubernetes deployment workflow using modern DevOps practices.
