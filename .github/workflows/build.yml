@@ -190,21 +190,28 @@ jobs:
           html_body: |
             <p>Hello,</p>
             <p>The DevSecOps pipeline for the requested assessment has completed successfully.</p>
+            
+            <p style="font-size: 16px;"><strong>🔗 <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" style="color: #1a73e8; font-weight: bold; text-decoration: underline;">Click Here to View Security Reports on the Web</a></strong></p>
+            
+            <hr>
+            
             <ul>
               <li><strong>Candidate Name:</strong> Prajwal</li>
               <li><strong>Role Applied:</strong> Junior DevOps Engineer</li>
               <li><strong>Repository:</strong> <a href="https://github.com/${{ github.repository }}">${{ github.repository }}</a></li>
               <li><strong>Branch:</strong> ${{ github.ref_name }}</li>
               <li><strong>Commit:</strong> <a href="https://github.com/${{ github.repository }}/commit/${{ github.sha }}">${{ github.sha }}</a></li>
-              <li><strong>Workflow Run Number:</strong> <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">${{ github.run_number }}</a></li>
             </ul>
+            
             <p><strong>Security Scans Executed:</strong><br>
             ✔ Semgrep (SAST)<br>
             ✔ Gitleaks (Secret Detection)<br>
             ✔ Trivy Filesystem Scan<br>
             ✔ Trivy Container Image Scan</p>
+            
             <p><strong>Docker Image:</strong><br>
             <code>prajwaldevops1027/ledger-api:v2</code></p>
+            
             <br>
             <p>Regards,<br>
             <strong>Prajwal</strong><br>
