@@ -171,7 +171,7 @@ jobs:
           from: GitHub Actions
           html_body: |
             <p>Hello,</p>
-            <p>The DevSecOps pipeline for the requested assessment has completed successfully.</p>
+            <p>✅ DevSecOps Pipeline Execution Successful</p>
             
             <p style="font-size: 16px;"><strong>🔗 <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" style="color: #1a73e8; font-weight: bold; text-decoration: underline;">Click Here to View Security Reports on the Web</a></strong></p>
             
