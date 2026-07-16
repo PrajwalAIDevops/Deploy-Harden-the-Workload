@@ -14,6 +14,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    # Added environment permission requirement for GitHub Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
     defaults:
       run:
         working-directory: app
@@ -202,14 +207,14 @@ jobs:
           from: GitHub Actions
           html_body: |
             <p>Hello,</p>
-            <p>The DevSecOps pipeline for the requested assessment has completed successfully.</p>
+            <p>The DevSecOps pipeline build has successfully completed.</p>
             
             <p style="font-size: 15px; background-color: #f8f9fa; padding: 15px; border-left: 5px solid #28a745; border-radius: 4px; line-height: 1.6;">
               <strong>⚡ Instant Web Links for HR (Click to Open in Browser):</strong><br>
-              ▪️ <a href="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/semgrep.html" style="color: #007bff; font-weight: bold; text-decoration: none;" target="_blank">View Semgrep Code Scan Report</a><br>
-              ▪️ <a href="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/gitleaks.html" style="color: #007bff; font-weight: bold; text-decoration: none;" target="_blank">View Gitleaks Secrets Scan Report</a><br>
-              ▪️ <a href="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/trivy-fs.html" style="color: #007bff; font-weight: bold; text-decoration: none;" target="_blank">View Trivy Filesystem Scan Report</a><br>
-              ▪️ <a href="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/trivy-image.html" style="color: #007bff; font-weight: bold; text-decoration: none;" target="_blank">View Trivy Container Image Report</a>
+              ▪️ <a href="${{ steps.deployment.outputs.page_url }}semgrep.html" style="color: #007bff; font-weight: bold; text-decoration: none;" target="_blank">View Semgrep Code Scan Report</a><br>
+              ▪️ <a href="${{ steps.deployment.outputs.page_url }}gitleaks.html" style="color: #007bff; font-weight: bold; text-decoration: none;" target="_blank">View Gitleaks Secrets Scan Report</a><br>
+              ▪️ <a href="${{ steps.deployment.outputs.page_url }}trivy-fs.html" style="color: #007bff; font-weight: bold; text-decoration: none;" target="_blank">View Trivy Filesystem Scan Report</a><br>
+              ▪️ <a href="${{ steps.deployment.outputs.page_url }}trivy-image.html" style="color: #007bff; font-weight: bold; text-decoration: none;" target="_blank">View Trivy Container Image Report</a>
             </p>
             
             <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
