@@ -19,7 +19,7 @@ spec:
 
       containers:
         - name: ledger-api
-          image: ledger-api:v1.0.0
+          image: prajwaldevops1027/ledger-api:v2
           imagePullPolicy: IfNotPresent
 
           ports:
