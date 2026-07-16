@@ -30,7 +30,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Verify Python Application
+      - name: Verify Python Syntax
         run: |
           python -m py_compile app.py
 
@@ -39,17 +39,17 @@ jobs:
           docker build -t prajwaldevops1027/ledger-api:v2 .
 
       - name: Run Semgrep
-        uses: returntocorp/semgrep-action@v1
+        uses: semgrep/semgrep-action@v1
         with:
-          config: p/security-audit
+          config: auto
         continue-on-error: true
 
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
         continue-on-error: true
 
-      - name: Trivy Filesystem Scan
-        uses: aquasecurity/trivy-action@0.28.0
+      - name: Run Trivy Filesystem Scan
+        uses: aquasecurity/trivy-action@master
         with:
           scan-type: fs
           scan-ref: app
@@ -57,8 +57,8 @@ jobs:
           severity: HIGH,CRITICAL
         continue-on-error: true
 
-      - name: Trivy Image Scan
-        uses: aquasecurity/trivy-action@0.28.0
+      - name: Run Trivy Image Scan
+        uses: aquasecurity/trivy-action@master
         with:
           image-ref: prajwaldevops1027/ledger-api:v2
           format: table
@@ -75,38 +75,22 @@ jobs:
         run: |
           docker push prajwaldevops1027/ledger-api:v2
 
-      - name: Update Kubernetes Manifest
+      - name: Update Deployment Manifest
         working-directory: .
         run: |
           sed -i 's|image:.*|image: prajwaldevops1027/ledger-api:v2|g' deploy/deployment.yaml
 
-      - name: Commit Updated Manifest
+      - name: Commit Manifest Changes
         working-directory: .
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
 
           git add deploy/deployment.yaml
 
-          git diff --cached --quiet || git commit -m "Update image to v2"
-
-      - name: Push Manifest
-        working-directory: .
-        run: |
-          git push origin main
-
-      - name: Pipeline Completed
-        run: |
-          echo "======================================="
-          echo "Checkout Completed"
-          echo "Dependencies Installed"
-          echo "Application Verified"
-          echo "Docker Image Built"
-          echo "Semgrep Completed"
-          echo "Gitleaks Completed"
-          echo "Trivy Filesystem Scan Completed"
-          echo "Trivy Image Scan Completed"
-          echo "Docker Image Pushed"
-          echo "Kubernetes Manifest Updated"
-          echo "ArgoCD will Auto Sync"
-          echo "======================================="
+          if ! git diff --cached --quiet; then
+            git commit -m "Update deployment image to v2"
+            git push origin main
+          else
+            echo "No changes detected"
+          fi
