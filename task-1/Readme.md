@@ -2,72 +2,63 @@
 
 ## Overview
 
-This task focuses on deploying the **ledger-api** application into Kubernetes and hardening it using production security best practices. The objective was not only to make the application run successfully, but also to reduce its attack surface and follow the principle of least privilege, similar to how workloads are deployed in PCI DSS or other regulated environments.
+This task focuses on deploying and securing the **ledger-api** application in Kubernetes using production-oriented security practices. The objective was to transform the provided insecure workload into a hardened deployment by applying least privilege, container security, configuration management, health monitoring, and Kubernetes admission controls.
 
-The application was deployed into a dedicated namespace with its own ServiceAccount, RBAC permissions, security contexts, resource limits, health probes, ConfigMaps, Secrets, and Kyverno admission policies.
+The application was deployed on an **AWS EC2-based Kubernetes cluster**, validated successfully, and secured using Kubernetes native security features.
 
 ---
 
 # Architecture
 
-```
-                      +----------------------+
-                      |      Ingress         |
-                      +----------+-----------+
-                                 |
-                                 |
-                     +-----------v------------+
-                     |   Service (ClusterIP)  |
-                     +-----------+------------+
-                                 |
-                     +-----------v------------+
-                     |      Deployment        |
-                     |    ledger-api (3 Pods) |
-                     +-----------+------------+
-                                 |
-          +----------------------+----------------------+
-          |                                             |
-          |                                             |
-+---------v----------+                     +-------------v-----------+
-|     ConfigMap      |                     |        Secret           |
-| Application Config |                     | Sensitive Credentials   |
-+--------------------+                     +-------------------------+
-
-                     +-----------------------------+
-                     |      ServiceAccount         |
-                     +-------------+---------------+
-                                   |
-                          +--------v--------+
-                          |      RBAC       |
-                          | Least Privilege |
-                          +-----------------+
-
-                     +-----------------------------+
-                     |      Kyverno Policies       |
-                     | No Root / No Latest Image   |
-                     +-----------------------------+
+```text
+                           Internet
+                               │
+                               │
+                           Ingress
+                               │
+                               ▼
+                     +------------------+
+                     | ClusterIP Service|
+                     +------------------+
+                               │
+                               ▼
+                    +--------------------+
+                    |  Ledger API Pods   |
+                    |     (3 Replicas)   |
+                    +--------------------+
+                               │
+        ┌──────────────────────┼─────────────────────┐
+        │                      │                     │
+        ▼                      ▼                     ▼
+   ConfigMap               Secret             ServiceAccount
+        │                      │                     │
+        └───────────────RBAC Permissions────────────┘
+                               │
+                               ▼
+                      Kyverno Admission Policies
 ```
 
 ---
 
 # Project Structure
 
-```
+```text
 Deploy-Harden-the-Workload/
 
 ├── deploy/
 │   ├── namespace.yaml
 │   ├── deployment.yaml
 │   ├── service.yaml
+│   ├── ingress.yaml
 │   ├── configmap.yaml
 │   ├── secret.yaml
+│   ├── sealed-secret.yaml
 │   ├── serviceaccount.yaml
 │   ├── role.yaml
 │   ├── rolebinding.yaml
 │   ├── reporting.yaml
 │   ├── kyverno-disallow-root.yaml
-│   ├── kyverno-disallow-latest.yaml
-│   └── ingress.yaml
+│   └── kyverno-disallow-latest.yaml
 │
 ├── screenshots/
 │
@@ -78,372 +69,300 @@ Deploy-Harden-the-Workload/
 
 # Environment
 
-| Component         | Version         |
-| ----------------- | --------------- |
-| Ubuntu            | 24.04           |
-| Kubernetes        | kubeadm Cluster |
-| Container Runtime | containerd      |
-| kubectl           | Latest Stable   |
-| Kyverno           | Latest          |
-| Docker            | Latest          |
+| Component         | Details              |
+| ----------------- | -------------------- |
+| Kubernetes        | kubeadm Cluster      |
+| Hosting           | AWS EC2              |
+| Container Runtime | containerd           |
+| Operating System  | Ubuntu 24.04         |
+| kubectl           | Latest Stable        |
+| Kyverno           | Admission Controller |
 
 ---
 
-# Step 1 - Namespace
+# Implementation
 
-A dedicated namespace was created to isolate the application from other workloads running inside the cluster.
+## 1. Namespace Isolation
 
-```yaml
-Namespace: payments
-```
+A dedicated namespace named **payments** was created to isolate the application from other workloads running inside the Kubernetes cluster.
 
-This provides better security boundaries and simplifies RBAC management.
+Benefits:
+
+* Resource isolation
+* Easier RBAC management
+* Better organization
+* Reduced blast radius
 
 ---
 
-# Step 2 - Deploy the Application
+## 2. Application Deployment
 
-The application was deployed as a Kubernetes Deployment with **3 replicas**.
+The application was deployed using a Kubernetes Deployment with three replicas.
 
-Features included:
+Deployment Features
 
-* Rolling Updates
-* Replica Management
-* Self Healing
-* Pod Restart
 * High Availability
+* Replica Management
+* Rolling Updates
+* Self Healing
+* Automatic Restart
 
-The Deployment exposes port **8080**.
+The application listens on **port 8080**.
 
 ---
 
-# Step 3 - Service
+## 3. Kubernetes Service
 
-A ClusterIP Service was created.
+A ClusterIP Service exposes the application internally within the cluster.
 
-```
+Traffic Flow
+
+```text
 Client
-   |
+   │
 ClusterIP Service
-   |
-Deployment
-   |
-Pods
+   │
+Ledger API Pods
 ```
-
-The service forwards traffic to the application running on port **8080**.
 
 ---
 
-# Step 4 - Configuration Management
+## 4. Externalized Configuration
 
-Application configuration was separated from the container image.
+Application configuration was separated from the container image by using ConfigMaps.
 
-Configuration values such as
+Stored values include:
 
 * APP_ENV
 * APP_PORT
 
-were stored inside a ConfigMap.
-
-This allows changing runtime configuration without rebuilding the Docker image.
+Keeping configuration outside the image allows updates without rebuilding the application.
 
 ---
 
-# Step 5 - Secret Management
+## 5. Secret Management
 
-Sensitive values were removed from application code.
+Sensitive information was removed from application code and stored separately.
 
-Secrets such as
+Examples:
 
 * STRIPE_API_KEY
 * DB_PASSWORD
 
-were stored as Kubernetes Secrets.
+For production environments, a **Sealed Secret** manifest has been included to demonstrate encrypted secret management.
 
-For production, Sealed Secrets was chosen because encrypted secrets can safely remain inside Git.
-
-During local testing, a normal Kubernetes Secret was used because the Sealed Secrets controller was not installed in the cluster.
+During local testing, a standard Kubernetes Secret was used because the Sealed Secrets controller was not installed in the cluster.
 
 ---
 
-# Step 6 - Service Account
+## 6. Service Account
 
-Instead of using the default Kubernetes ServiceAccount, a dedicated ServiceAccount named
+A dedicated ServiceAccount (**ledger-api-sa**) was created instead of using the default Kubernetes ServiceAccount.
 
-```
-ledger-api-sa
-```
-
-was created.
-
-This follows the Principle of Least Privilege.
+This follows the Principle of Least Privilege and avoids granting unnecessary permissions to the application.
 
 ---
 
-# Step 7 - RBAC
+## 7. RBAC
 
-The application only requires read access to specific Kubernetes resources.
+Role-Based Access Control was implemented to restrict what the application can access inside the cluster.
 
-Role Permissions
+Only minimal read permissions were granted for Kubernetes resources required by the application.
 
-```
-ConfigMaps
-Secrets
-```
-
-Allowed Verbs
-
-```
-get
-list
-```
-
-No write permissions were granted.
-
-This significantly reduces the impact if the application is compromised.
+This prevents unnecessary access to cluster resources.
 
 ---
 
-# Step 8 - Pod Security Hardening
+## 8. Container Hardening
 
-Every container was hardened using Kubernetes SecurityContext.
+Each container was configured using a hardened SecurityContext.
 
-Implemented controls:
+Security controls implemented:
 
-* runAsNonRoot
-* runAsUser:1000
-* allowPrivilegeEscalation:false
-* readOnlyRootFilesystem:true
-* Drop ALL Linux Capabilities
+* Non-root execution
+* User ID 1000
+* Privilege escalation disabled
+* Read-only root filesystem
+* All Linux capabilities removed
 * RuntimeDefault Seccomp Profile
 
-These controls prevent privilege escalation and reduce container escape risks.
+These controls significantly reduce the attack surface of the running container.
 
 ---
 
-# Step 9 - Resource Limits
+## 9. Resource Management
 
-CPU and Memory requests/limits were configured.
+CPU and Memory requests/limits were configured to improve scheduling and prevent resource exhaustion.
 
-```
-Requests
-
-CPU    : 100m
-Memory : 128Mi
-
-Limits
-
-CPU    : 500m
-Memory : 512Mi
-```
-
-Benefits
-
-* Prevent noisy neighbour issues
-* Better scheduling
-* Predictable resource usage
-* Prevent memory exhaustion
+| Resource | Request | Limit |
+| -------- | ------- | ----- |
+| CPU      | 100m    | 500m  |
+| Memory   | 128Mi   | 512Mi |
 
 ---
 
-# Step 10 - Health Checks
+## 10. Health Monitoring
 
-Initially the deployment used
+Initially, the deployment used **/** as both the Readiness and Liveness probe endpoint.
 
-```
-/
-```
+The application responded with **HTTP 404**, causing Kubernetes to continuously restart the Pods.
 
-for both Liveness and Readiness probes.
+After reviewing the application source code, the correct endpoint **/health** was identified and configured for both probes.
 
-The application returned
+The application now responds successfully:
 
-```
-404 Not Found
-```
-
-which caused Kubernetes to continuously mark the Pods as unhealthy.
-
-After reviewing the application source code, it was found that the application exposes a dedicated health endpoint.
-
-```
-/health
-```
-
-The probes were updated accordingly.
-
-```
-Readiness Probe
-
-GET /health
-
-Liveness Probe
-
-GET /health
-```
-
-After updating the probes, all Pods reached the **Running (1/1 Ready)** state successfully.
-
-This issue was identified by reviewing Pod events, checking container logs, and inspecting the Flask application routes.
-
----
-
-# Step 11 - Kyverno Admission Policies
-
-Two admission policies were implemented.
-
-## Policy 1
-
-Reject containers using
-
-```
-:latest
-```
-
-image tags.
-
-Reason
-
-Image tags should always be immutable to ensure reproducible deployments.
-
----
-
-## Policy 2
-
-Reject containers running as
-
-```
-root
-```
-
-Reason
-
-Running containers as root increases the risk of privilege escalation and container breakout.
-
----
-
-# Additional Neighbour Service
-
-As required by the assignment, a second workload named
-
-```
-reporting
-```
-
-was deployed.
-
-This workload runs with its own ServiceAccount and hardened SecurityContext.
-
-It serves as a neighbouring application for future networking and service mesh tasks.
-
----
-
-# Validation
-
-The deployment was validated using the following checks.
-
-Pods
-
-```
-kubectl get pods -n payments
-```
-
-Services
-
-```
-kubectl get svc -n payments
-```
-
-Health Endpoint
-
-```
-curl http://localhost:8080/health
-
+```json
 {
-  "status":"ok"
+  "status": "ok"
 }
 ```
 
-
-
-Kyverno
-
-Attempting to deploy a container using
-
-```
-nginx:latest
-```
-
-is rejected by the admission controller.
+All Pods transitioned to a healthy **Running (1/1 Ready)** state after updating the probe configuration.
 
 ---
 
-# Security Improvements Achieved
+## 11. Kyverno Policies
 
-* Dedicated Namespace
-* Least Privilege ServiceAccount
-* RBAC
-* ConfigMaps for configuration
-* Secrets separated from application code
+Two admission policies were implemented.
+
+### Disallow Latest Image Tag
+
+Rejects any Deployment using the **latest** image tag.
+
+Reason:
+
+Using immutable image tags improves deployment consistency and traceability.
+
+---
+
+### Disallow Root Containers
+
+Rejects Pods attempting to run as the root user.
+
+Reason:
+
+Running containers as non-root significantly reduces the impact of container compromise.
+
+---
+
+## 12. Neighbour Service
+
+As required by the assignment, an additional workload named **reporting** was deployed.
+
+The reporting service uses:
+
+* Dedicated ServiceAccount
 * Hardened SecurityContext
-* Non-root container
-* Read-only root filesystem
-* Dropped Linux capabilities
-* RuntimeDefault Seccomp
-* CPU & Memory resource limits
-* Liveness & Readiness probes
-* Kyverno admission policies
-* Three replica deployment for high availability
+* Resource Requests & Limits
+
+This workload will be used in later tasks involving networking and service mesh.
 
 ---
 
-# Challenges Faced
+# Challenges Encountered
 
-### 1. ImagePullBackOff
+### ImagePullBackOff
 
-Initially the Deployment referenced a local Docker image.
+Initially, the Deployment referenced a local image.
 
 ```
 ledger-api:v1.0.0
 ```
 
-Since the image was unavailable in Docker Hub, Kubernetes returned an ImagePullBackOff error.
+Since the image was not available in Docker Hub, Kubernetes returned an ImagePullBackOff error.
 
-The Deployment was updated to reference the correct published image hosted in Docker Hub.
+The Deployment was updated to reference the published Docker Hub image, resolving the issue.
 
 ---
 
-### 2. Health Probe Failures
+### Health Probe Failure
 
-The initial health probes targeted
+The initial Liveness and Readiness probes targeted:
 
 ```
 /
 ```
 
-which returned HTTP 404.
+The application returned HTTP 404.
 
-After reviewing the Flask application, the probes were changed to
+After reviewing the Flask application routes, both probes were updated to:
 
 ```
 /health
 ```
 
-allowing Kubernetes to correctly determine application health.
+The application then passed all health checks successfully.
 
 ---
 
-### 3. Sealed Secrets
+### Sealed Secrets
 
-The cluster did not have the Bitnami Sealed Secrets controller installed.
+The cluster used for testing did not have the Bitnami Sealed Secrets controller installed.
 
-As a result, SealedSecret resources could not be created during local testing.
+For this reason, a Kubernetes Secret was temporarily used for runtime validation, while the Sealed Secret manifest remains part of the repository to demonstrate the intended production implementation.
 
-For demonstration purposes, a standard Kubernetes Secret was used while retaining the SealedSecret manifest in the repository to illustrate the intended production approach.
+---
+
+# Validation
+
+The deployment was successfully validated on an **AWS EC2-based Kubernetes cluster**.
+
+The following verifications were completed:
+
+* All application Pods reached the **Running** state.
+* Readiness and Liveness probes returned successful responses.
+* ClusterIP Service routed traffic correctly to application Pods.
+* Kyverno admission policies were applied successfully.
+* The reporting workload was deployed alongside the ledger-api application.
+
+### Deployment Evidence
+
+**Screenshot 1**
+
+`/screenshots/pods-running.png`
+
+Shows:
+
+* Three healthy ledger-api Pods
+* Reporting Pod
+* All Pods in Running state
+
+---
+
+**Screenshot 2**
+
+`/screenshots/health-check.png`
+
+Shows successful response from the application health endpoint.
+
+```json
+{
+    "status": "ok"
+}
+```
+
+---
+
+## Security Controls Implemented
+
+* Dedicated Namespace
+* ConfigMaps
+* Secrets
+* Sealed Secret Manifest
+* Dedicated ServiceAccount
+* RBAC
+* Non-root Containers
+* Read-only Root Filesystem
+* Dropped Linux Capabilities
+* RuntimeDefault Seccomp
+* Resource Requests & Limits
+* Readiness Probe
+* Liveness Probe
+* Kyverno Admission Policies
+* Three Replica Deployment
 
 ---
 
 # Conclusion
 
-This task demonstrates how an insecure Kubernetes workload can be transformed into a production-ready deployment using security best practices. The application is isolated within its own namespace, follows least privilege principles, avoids running as root, uses externalized configuration and secrets, enforces admission policies, and includes health monitoring for reliable operations. These controls align with common Kubernetes security recommendations and provide a solid foundation for the remaining tasks in the assessment.
+The ledger-api application was successfully deployed and hardened on an AWS-hosted Kubernetes cluster by applying production security best practices. The workload now follows the principle of least privilege, externalizes configuration and secrets, runs as a non-root user, enforces admission policies, and includes health monitoring for reliable operations. These controls provide a strong security baseline and prepare the application for the remaining tasks in the assessment.
