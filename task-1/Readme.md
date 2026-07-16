@@ -319,27 +319,18 @@ The following verifications were completed:
 
 **Screenshot 1**
 
-`/screenshots/pods-running.png`
+## 1. Pods Running
 
-Shows:
+Shows all **3 ledger-api Pods** and the **reporting Pod** in the `Running` state.
 
-* Three healthy ledger-api Pods
-* Reporting Pod
-* All Pods in Running state
+![Pods Running](screenshots/pods-running.png)
 
 ---
+## 2. Health Check
 
-**Screenshot 2**
+Successful response from the application health endpoint (`/health`).
 
-`/screenshots/health-check.png`
-
-Shows successful response from the application health endpoint.
-
-```json
-{
-    "status": "ok"
-}
-```
+![Health Check](screenshots/health-check.png)
 
 ---
 
