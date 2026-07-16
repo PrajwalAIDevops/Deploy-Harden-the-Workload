@@ -184,34 +184,33 @@ jobs:
           secure: true
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: "DevSecOps CI/CD Pipeline Report"
+          subject: "Task - 2 Pipeline Running - Prajwal"
           to: prajwalint1027@gmail.com
           from: GitHub Actions
-          body: |
-            Hello,
-
-            The DevSecOps pipeline has completed.
-
-            Repository: ${{ github.repository }}
-            Branch: ${{ github.ref_name }}
-            Commit: ${{ github.sha }}
-            Workflow: ${{ github.workflow }}
-            Run Number: ${{ github.run_number }}
-
-            Security Scans Executed:
-            ✔ Semgrep
-            ✔ Gitleaks
-            ✔ Trivy Filesystem
-            ✔ Trivy Docker Image
-
-            Docker Image:
-            prajwaldevops1027/ledger-api:v2
-
-            Regards,
-            GitHub Actions
-
+          html_body: |
+            <p>Hello,</p>
+            <p>The DevSecOps pipeline for the requested assessment has completed successfully.</p>
+            <ul>
+              <li><strong>Candidate Name:</strong> Prajwal</li>
+              <li><strong>Role Applied:</strong> Junior DevOps Engineer</li>
+              <li><strong>Repository:</strong> <a href="https://github.com/${{ github.repository }}">${{ github.repository }}</a></li>
+              <li><strong>Branch:</strong> ${{ github.ref_name }}</li>
+              <li><strong>Commit:</strong> <a href="https://github.com/${{ github.repository }}/commit/${{ github.sha }}">${{ github.sha }}</a></li>
+              <li><strong>Workflow Run Number:</strong> <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">${{ github.run_number }}</a></li>
+            </ul>
+            <p><strong>Security Scans Executed:</strong><br>
+            ✔ Semgrep (SAST)<br>
+            ✔ Gitleaks (Secret Detection)<br>
+            ✔ Trivy Filesystem Scan<br>
+            ✔ Trivy Container Image Scan</p>
+            <p><strong>Docker Image:</strong><br>
+            <code>prajwaldevops1027/ledger-api:v2</code></p>
+            <br>
+            <p>Regards,<br>
+            <strong>Prajwal</strong><br>
+            Junior DevOps Engineer</p>
           attachments: |
-            reports/semgrep.json
-            reports/gitleaks.json
-            reports/trivy-fs.txt
-            reports/trivy-image.txt
+            ${{ github.workspace }}/reports/semgrep.json
+            ${{ github.workspace }}/reports/gitleaks.json
+            ${{ github.workspace }}/reports/trivy-fs.txt
+            ${{ github.workspace }}/reports/trivy-image.txt
