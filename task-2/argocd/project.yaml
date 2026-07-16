@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: ledger-project
+  namespace: argocd
+spec:
+  description: Ledger API GitOps Project
+
+  sourceRepos:
+    - "https://github.com/PrajwalAIDevops/Deploy-Harden-the-Workload.git"
+
+  destinations:
+    - namespace: payments
+      server: https://kubernetes.default.svc
+
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+
+  orphanedResources:
+    warn: true
+
+  roles:
+    - name: admin
+      description: Project Administrator
+      policies:
+        - p, proj:ledger-project:admin, applications, *, ledger-project/*, allow
+      groups:
+        - administrators
