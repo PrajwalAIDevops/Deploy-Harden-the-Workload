@@ -365,13 +365,7 @@ curl http://localhost:8080/health
 }
 ```
 
-RBAC
 
-```
-kubectl auth can-i get secrets \
---as=system:serviceaccount:payments:ledger-api-sa \
--n payments
-```
 
 Kyverno
 
