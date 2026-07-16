@@ -1,4 +1,4 @@
-# 🚀 Ledger API - Production Grade Kubernetes Deployment with ArgoCD, Sealed Secrets & GitOps
+# 🚀 Ledger API -   Kubernetes Deployment with ArgoCD, Sealed Secrets & GitOps
 
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-1.33-blue)
 ![ArgoCD](https://img.shields.io/badge/ArgoCD-GitOps-orange)
@@ -10,7 +10,7 @@
 
 # 📌 Project Overview
 
-This project demonstrates a production-style Kubernetes deployment workflow using modern DevOps practices.
+This project demonstrates a -style Kubernetes deployment workflow using modern DevOps practices.
 
 The application is deployed using a **GitOps approach** where Kubernetes manifests are maintained in GitHub and automatically synchronized into the Kubernetes cluster using **ArgoCD**.
 
@@ -27,7 +27,7 @@ The project includes:
 - Liveness and Readiness probes
 - GitHub Actions CI pipeline
 - ArgoCD GitOps continuous deployment
-- Kubernetes troubleshooting and production hardening
+- Kubernetes troubleshooting and  hardening
 
 
 ---
@@ -565,7 +565,7 @@ argocd app get ledger-api
 
 ---
 
-# 🧪 Production Issues Handled
+# 🧪  Issues Handled
 
 
 ## ImagePullBackOff
@@ -670,10 +670,10 @@ DevOps Engineer | Kubernetes | Docker | GitOps | Cloud Automation
 # ⭐ Project Highlights
 
 
-✅ Production Kubernetes Deployment  
+✅  Kubernetes Deployment  
 ✅ GitOps with ArgoCD  
 ✅ CI/CD Automation  
 ✅ Secure Secret Management  
 ✅ Kubernetes Security with RBAC  
 ✅ Application Reliability  
-✅ Real Production Troubleshooting Experience  
+✅ Real  Troubleshooting Experience  
