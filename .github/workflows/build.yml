@@ -7,16 +7,10 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
     defaults:
       run:
@@ -35,29 +29,24 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
       - name: Verify Python Syntax
         run: |
           python -m py_compile app.py
-
       - name: Build Docker Image
         run: |
           docker build -t prajwaldevops1027/ledger-api:v2 .
-
       ####################################################
-      # Install Security Tools & Formatters
+      # Install Security Tools
       ####################################################
       - name: Install Semgrep
         run: |
           pip install semgrep
-
       - name: Install Gitleaks
         run: |
           VERSION=8.24.2
           wget https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz
           tar -xzf gitleaks_${VERSION}_linux_x64.tar.gz
           sudo mv gitleaks /usr/local/bin/
-
       - name: Install Trivy
         working-directory: .
         run: |
@@ -65,13 +54,10 @@ jobs:
           sudo apt-get install -y wget apt-transport-https gnupg lsb-release
           wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | \
           gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
-
           echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | \
           sudo tee /etc/apt/sources.list.d/trivy.list
-
           sudo apt-get update
           sudo apt-get install -y trivy
-
       ####################################################
       # Create Reports Folder
       ####################################################
@@ -79,20 +65,18 @@ jobs:
         working-directory: .
         run: |
           mkdir -p reports
-
       ####################################################
-      # Semgrep Scan (HTML Output)
+      # Semgrep Scan
       ####################################################
       - name: Run Semgrep
         working-directory: .
         continue-on-error: true
         run: |
           semgrep --config auto . \
-          --html \
-          --output reports/semgrep.html
-
+          --json \
+          --output reports/semgrep.json
       ####################################################
-      # Gitleaks Scan (JSON converted to clean Text HTML)
+      # Gitleaks Scan
       ####################################################
       - name: Run Gitleaks
         working-directory: .
@@ -100,18 +84,9 @@ jobs:
         run: |
           gitleaks detect \
           --report-format json \
-          --report-path reports/gitleaks-raw.json
-          
-          echo "<html><body style='font-family:sans-serif; padding:20px;'><h1>Gitleaks Report</h1><pre style='background:#f4f4f4; padding:15px; border-radius:5px;'>" > reports/gitleaks.html
-          if [ -s reports/gitleaks-raw.json ]; then
-            cat reports/gitleaks-raw.json >> reports/gitleaks.html
-          else
-            echo "No leaks found! Repository is clean." >> reports/gitleaks.html
-          fi
-          echo "</pre></body></html>" >> reports/gitleaks.html
-
+          --report-path reports/gitleaks.json
       ####################################################
-      # Trivy Filesystem (HTML Output)
+      # Trivy Filesystem
       ####################################################
       - name: Run Trivy Filesystem Scan
         working-directory: .
@@ -119,11 +94,10 @@ jobs:
         run: |
           trivy fs app \
           --severity HIGH,CRITICAL \
-          --format html \
-          > reports/trivy-fs.html
-
+          --format table \
+          > reports/trivy-fs.txt
       ####################################################
-      # Trivy Image (HTML Output)
+      # Trivy Image
       ####################################################
       - name: Run Trivy Image Scan
         working-directory: .
@@ -131,21 +105,17 @@ jobs:
         run: |
           trivy image \
           --severity HIGH,CRITICAL \
-          --format html \
+          --format table \
           prajwaldevops1027/ledger-api:v2 \
-          > reports/trivy-image.html
-
+          > reports/trivy-image.txt
       ####################################################
-      # Publish Reports to GitHub Pages for instant web viewing
+      # Upload Reports
       ####################################################
-      - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload Security Reports
+        uses: actions/upload-artifact@v4
         with:
+          name: security-reports
           path: reports/
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
 
       ####################################################
       # Docker Login
@@ -162,7 +132,6 @@ jobs:
       - name: Push Docker Image
         run: |
           docker push prajwaldevops1027/ledger-api:v2
-
       ####################################################
       # Update Manifest
       ####################################################
@@ -170,7 +139,6 @@ jobs:
         working-directory: .
         run: |
           sed -i 's|image:.*|image: prajwaldevops1027/ledger-api:v2|g' deploy/deployment.yaml
-
       ####################################################
       # Commit Manifest
       ####################################################
@@ -179,18 +147,15 @@ jobs:
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-
           git add deploy/deployment.yaml
-
           if ! git diff --cached --quiet; then
             git commit -m "Update deployment image to v2"
             git push origin main
           else
             echo "No changes detected"
           fi
-
       ####################################################
-      # Email Reports with Instant Web Links
+      # Email Reports
       ####################################################
       - name: Send Email
         if: always()
@@ -206,17 +171,11 @@ jobs:
           from: GitHub Actions
           html_body: |
             <p>Hello,</p>
-            <p>The DevSecOps pipeline build has successfully completed.</p>
+            <p>The DevSecOps pipeline for the requested assessment has completed successfully.</p>
             
-            <p style="font-size: 15px; background-color: #f8f9fa; padding: 15px; border-left: 5px solid #28a745; border-radius: 4px; line-height: 1.6;">
-              <strong>⚡ Instant Web Links for HR (Click to Open in Browser):</strong><br>
-              ▪️ <a href="${{ steps.deployment.outputs.page_url }}semgrep.html" style="color: #007bff; font-weight: bold; text-decoration: none;" target="_blank">View Semgrep Code Scan Report</a><br>
-              ▪️ <a href="${{ steps.deployment.outputs.page_url }}gitleaks.html" style="color: #007bff; font-weight: bold; text-decoration: none;" target="_blank">View Gitleaks Secrets Scan Report</a><br>
-              ▪️ <a href="${{ steps.deployment.outputs.page_url }}trivy-fs.html" style="color: #007bff; font-weight: bold; text-decoration: none;" target="_blank">View Trivy Filesystem Scan Report</a><br>
-              ▪️ <a href="${{ steps.deployment.outputs.page_url }}trivy-image.html" style="color: #007bff; font-weight: bold; text-decoration: none;" target="_blank">View Trivy Container Image Report</a>
-            </p>
+            <p style="font-size: 16px;"><strong>🔗 <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" style="color: #1a73e8; font-weight: bold; text-decoration: underline;">Click Here to View Security Reports on the Web</a></strong></p>
             
-            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+            <hr>
             
             <ul>
               <li><strong>Candidate Name:</strong> Prajwal</li>
@@ -226,7 +185,21 @@ jobs:
               <li><strong>Commit:</strong> <a href="https://github.com/${{ github.repository }}/commit/${{ github.sha }}">${{ github.sha }}</a></li>
             </ul>
             
+            <p><strong>Security Scans Executed:</strong><br>
+            ✔ Semgrep (SAST)<br>
+            ✔ Gitleaks (Secret Detection)<br>
+            ✔ Trivy Filesystem Scan<br>
+            ✔ Trivy Container Image Scan</p>
+            
+            <p><strong>Docker Image:</strong><br>
+            <code>prajwaldevops1027/ledger-api:v2</code></p>
+            
             <br>
             <p>Regards,<br>
             <strong>Prajwal</strong><br>
             Junior DevOps Engineer</p>
+          attachments: |
+            ${{ github.workspace }}/reports/semgrep.json
+            ${{ github.workspace }}/reports/gitleaks.json
+            ${{ github.workspace }}/reports/trivy-fs.txt
+            ${{ github.workspace }}/reports/trivy-image.txt
