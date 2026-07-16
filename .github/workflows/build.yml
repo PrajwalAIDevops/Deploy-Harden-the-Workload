@@ -167,7 +167,7 @@ jobs:
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "Task - 2 Pipeline Running - Prajwal"
-          to: prajwalint1027@gmail.com
+          to: aditi@dodopayments.com
           from: GitHub Actions
           html_body: |
             <p>Hello,</p>
